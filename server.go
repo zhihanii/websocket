@@ -1,7 +1,10 @@
 package websocket
 
 import (
+	"crypto/sha1"
+	"encoding/base64"
 	"errors"
+	"github.com/zhihanii/znet"
 	"strings"
 )
 
@@ -17,7 +20,7 @@ var (
 	ErrChallengeResponse = errors.New("mismatch challenge/response")
 )
 
-func Upgrade(req *Request) (conn *Conn, err error) {
+func Upgrade(req *Request, c znet.Conn) (conn *Conn, err error) {
 	if req.Method != "GET" {
 		return nil, ErrBadRequestMethod
 	}
@@ -34,5 +37,17 @@ func Upgrade(req *Request) (conn *Conn, err error) {
 	if challengeKey == "" {
 		return nil, ErrChallengeResponse
 	}
+	_, _ = c.WriteString("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n")
+	_, _ = c.WriteString("Sec-WebSocket-Accept: " + computeAcceptKey(challengeKey) + "\r\n\r\n")
+	if err = c.Flush(); err != nil {
+		return
+	}
+	return newConn(c, true, 0, 0, nil, nil, nil), nil
+}
 
+func computeAcceptKey(challengeKey string) string {
+	h := sha1.New()
+	_, _ = h.Write([]byte(challengeKey))
+	_, _ = h.Write(keyGUID)
+	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
