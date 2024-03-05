@@ -336,6 +336,7 @@ func (c *Conn) Subprotocol() string {
 // Close closes the underlying network connection without sending or waiting
 // for a close message.
 func (c *Conn) Close() error {
+	OnClose()
 	return c.conn.Close()
 }
 
@@ -547,6 +548,7 @@ func (w *messageWriter) endMessage(err error) error {
 
 // flushFrame writes buffered data and extra as a frame to the network. The
 // final argument indicates that this is the last frame in the message.
+// 非并发安全
 func (w *messageWriter) flushFrame(final bool, extra []byte) error {
 	c := w.c
 	length := w.pos - maxFrameHeaderSize + len(extra)

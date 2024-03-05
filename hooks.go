@@ -14,6 +14,14 @@ func ResetCloseHooks() {
 	onClose = []func(){}
 }
 
+func OnClose() {
+	muCloseHooks.Lock()
+	for i := range onClose {
+		onClose[i]()
+	}
+	muCloseHooks.Unlock()
+}
+
 type Hooks []func()
 
 func (h *Hooks) add(f ...func()) {
